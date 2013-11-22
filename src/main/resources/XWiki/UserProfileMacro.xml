@@ -1,0 +1,841 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xwikidoc>
+  <web>XWiki</web>
+  <name>UserProfileMacro</name>
+  <language/>
+  <defaultLanguage/>
+  <translation>0</translation>
+  <parent/>
+  <creator>xwiki:XWiki.Admin</creator>
+  <author>xwiki:XWiki.Admin</author>
+  <customClass/>
+  <contentAuthor>xwiki:XWiki.Admin</contentAuthor>
+  <creationDate>1385108576000</creationDate>
+  <date>1385120437000</date>
+  <contentUpdateDate>1385120433000</contentUpdateDate>
+  <version>1.1</version>
+  <title/>
+  <defaultTemplate/>
+  <validationScript/>
+  <comment/>
+  <minorEdit>false</minorEdit>
+  <syntaxId>xwiki/2.1</syntaxId>
+  <hidden>false</hidden>
+  <object>
+    <class>
+      <name>XWiki.JavaScriptExtension</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <cache>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <multiSelect>0</multiSelect>
+        <name>cache</name>
+        <number>5</number>
+        <prettyName>Caching policy</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators> ,|</separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>long|short|default|forbid</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </cache>
+      <code>
+        <disabled>0</disabled>
+        <name>code</name>
+        <number>2</number>
+        <prettyName>Code</prettyName>
+        <rows>20</rows>
+        <size>50</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </code>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>1</number>
+        <prettyName>Name</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+      <parse>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType>yesno</displayType>
+        <name>parse</name>
+        <number>4</number>
+        <prettyName>Parse content</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </parse>
+      <use>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <multiSelect>0</multiSelect>
+        <name>use</name>
+        <number>3</number>
+        <prettyName>Use this extension</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators> ,|</separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>currentPage=Always on this page|onDemand=On demand|always=Always on this wiki</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </use>
+    </class>
+    <name>XWiki.UserProfileMacro</name>
+    <number>0</number>
+    <className>XWiki.JavaScriptExtension</className>
+    <guid>55a44c30-b031-4b18-8bd3-945903555828</guid>
+    <property>
+      <cache>default</cache>
+    </property>
+    <property>
+      <code>/*
+ * Copyright (c) 2006 Jonathan Weiss &lt;jw@innerewut.de&gt;
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * tooltip-0.2.js - Small tooltip library on top of Prototype 
+ * by Jonathan Weiss &lt;jw@innerewut.de&gt; distributed under the BSD license. 
+ */
+
+var UpMenu = Class.create();
+UpMenu.prototype = {
+  initialize: function(element, up_Menu) {
+    var options = Object.extend({
+      default_css: false,
+      margin: "0px",
+      padding: "5px",
+      backgroundColor: "#d6d6fc",
+      min_distance_x: 5,
+      min_distance_y: 5,
+      delta_x: 0,
+      delta_y: 0,
+      zindex: 1000
+    }, arguments[2] || {});
+
+    this.element     = $(element);
+    this.options     = options; 
+    this.up_MenuMask = null;
+
+    element.addClassName('upMenuHintById');
+    
+    // use the supplied upMenu element or create our own div
+    if($(up_Menu)) {
+      this.up_Menu = $(up_Menu);
+      this.up_MenuMask = $(up_Menu);
+    } else {
+      // insert upMenu into the dom
+      this.up_Menu = $(document.createElement("div")); 
+      document.body.appendChild(this.up_Menu);
+      this.up_Menu.addClassName("upMenu");
+      this.up_Menu.update(up_Menu);
+      this.up_MenuMask = element.next('.upMenu.hidden');
+      // set upMenu styles
+      this.up_Menu.writeAttribute('style', this.up_MenuMask.readAttribute('style'));
+      // set event name
+      this.event = 'click';
+      this.up_Menu.insert({ top: '&lt;div class="upMenu-close"&gt;x&lt;/div&gt;' });
+    }   
+
+    // hide the tool-tip by default
+    this.up_Menu.hide();
+
+    this.eventMouseOver = this.showUpMenu.bindAsEventListener(this);
+    this.eventMouseOut   = this.hideUpMenu.bindAsEventListener(this);
+    this.eventMouseMove  = this.moveUpMenu.bindAsEventListener(this);
+ 
+    // build events map
+    this.eventsMap = { 'mouseover' : { 'element' :  { 'mouseover' : this.eventMouseOver,
+                                                      'mouseout' : this.eventMouseOut, 
+                                                      'mousemove' : this.eventMouseMove },
+                                       'up_Menu' : {}
+                                     },
+                       'click' :     { 'element' :  { 'click' : this.eventMouseOver },
+                                       'up_Menu' : { 'click' : this.eventMouseOut }
+                                     } 
+                     };
+
+    this.registerEvents();
+  },
+
+  destroy: function() {
+    for(var key in this.eventsMap[this.event]){
+      for(var event in this.eventsMap[this.event][key]){
+        var elem = (key == 'element') ? this.element : this.up_Menu;
+        Event.stopObserving(elem, event, this.eventsMap[this.event][key][event]);
+      }
+    }
+  },
+
+  registerEvents: function() {
+    for(var key in this.eventsMap[this.event]){
+      for(var event in this.eventsMap[this.event][key]){
+        var elem = (key == 'element') ? this.element : this.up_Menu;
+        Event.observe(elem, event, this.eventsMap[this.event][key][event]);
+      }
+    }
+  },
+
+  moveUpMenu: function(event){
+    Event.stop(event);
+    // get Mouse position
+    var mouse_x = Event.pointerX(event);
+    var mouse_y = Event.pointerY(event);
+	
+    // decide if wee need to switch sides for the upMenu
+    var dimensions = Element.getDimensions( this.up_Menu );
+    var element_width = this.up_MenuMask.style.width ? this.up_MenuMask.style.width : dimensions.width;
+    var element_height = dimensions.height;
+	
+    if ( (element_width + mouse_x) &gt;= ( this.getWindowWidth() - this.options.min_distance_x) ){ // too big for X
+      mouse_x = mouse_x - element_width;
+      // apply min_distance to make sure that the mouse is not on the tool-tip
+      mouse_x = mouse_x - this.options.min_distance_x;
+    } else {
+      mouse_x = mouse_x + this.options.min_distance_x;
+    }
+	
+    if ( (element_height + mouse_y) &gt;= ( this.getWindowHeight() - this.options.min_distance_y) ){ // too big for Y
+      mouse_y = mouse_y - element_height;
+      // apply min_distance to make sure that the mouse is not on the tool-tip
+      mouse_y = mouse_y - this.options.min_distance_y;
+    } else {
+      mouse_y = mouse_y + this.options.min_distance_y;
+    } 
+	
+    // now set the right styles
+    this.setStyles(mouse_x, mouse_y);
+  },
+	
+		
+  showUpMenu: function(event) {
+    Event.stop(event);
+    this.moveUpMenu(event);
+    new Element.show(this.up_Menu);
+  },
+  
+  setStyles: function(x, y){
+    // set the right styles to position the tool tip
+    Element.setStyle(this.up_Menu, { position:'absolute',
+                                      top:y + this.options.delta_y + "px",
+                                      left:x + this.options.delta_x + "px",
+                                      zindex:this.options.zindex
+    });
+	
+    // apply default theme if wanted
+    if (this.options.default_css){
+      Element.setStyle(this.up_Menu, { margin:this.options.margin,
+                                        padding:this.options.padding,
+                                        backgroundColor:this.options.backgroundColor,
+                                        zindex:this.options.zindex
+      });	
+    }	
+  },
+
+  hideUpMenu: function(event){
+    new Element.hide(this.up_Menu);
+  },
+
+  getWindowHeight: function(){
+    var innerHeight;
+    if (navigator.appVersion.indexOf('MSIE')&gt;0) {
+      innerHeight = document.body.clientHeight;
+    } else {
+      innerHeight = window.innerHeight;
+    }
+    return innerHeight;	
+  },
+ 
+  getWindowWidth: function(){
+    var innerWidth;
+    if (navigator.appVersion.indexOf('MSIE')&gt;0) {
+      innerWidth = document.body.clientWidth;
+    } else {
+      innerWidth = window.innerWidth;
+    }
+    return innerWidth;	
+  }
+
+}
+
+document.observe("dom:loaded", function() {
+  $('mainContentArea').select('.upMenu.hidden').each(function(elem){
+    new UpMenu($(elem.readAttribute('target')), elem.innerHTML);
+  });
+});
+</code>
+    </property>
+    <property>
+      <name/>
+    </property>
+    <property>
+      <parse>0</parse>
+    </property>
+    <property>
+      <use>onDemand</use>
+    </property>
+  </object>
+  <object>
+    <class>
+      <name>XWiki.StyleSheetExtension</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <cache>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <multiSelect>0</multiSelect>
+        <name>cache</name>
+        <number>5</number>
+        <prettyName>Caching policy</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators> ,|</separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>long|short|default|forbid</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </cache>
+      <code>
+        <disabled>0</disabled>
+        <name>code</name>
+        <number>2</number>
+        <prettyName>Code</prettyName>
+        <rows>20</rows>
+        <size>50</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </code>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>1</number>
+        <prettyName>Name</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+      <parse>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType>yesno</displayType>
+        <name>parse</name>
+        <number>4</number>
+        <prettyName>Parse content</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </parse>
+      <use>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <multiSelect>0</multiSelect>
+        <name>use</name>
+        <number>3</number>
+        <prettyName>Use this extension</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators> ,|</separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>currentPage=Always on this page|onDemand=On demand|always=Always on this wiki</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </use>
+    </class>
+    <name>XWiki.UserProfileMacro</name>
+    <number>0</number>
+    <className>XWiki.StyleSheetExtension</className>
+    <guid>70388851-977d-4738-a81d-424920e75d11</guid>
+    <property>
+      <cache>long</cache>
+    </property>
+    <property>
+      <code>div.upMenu
+{
+  top: 0;
+  left: 0;
+  min-width: 100px;
+  padding: 10px;
+  font-size: 0.9em;
+  font-weight: normal;
+  text-align: left;
+  color: #000000;
+  background-color: #f3f3f3;
+  border: 1px solid #e7e7e7;
+  border-radius: 5px;
+  z-index: 9998;
+  text-align:justify;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  -khtml-border-radius: 5px;
+  -webkit-box-shadow: 1px 1px 4px rgba(50, 50, 50, 0.4);
+  -moz-box-shadow: 1px 1px 4px rgba(50, 50, 50, 0.4);
+  box-shadow: 1px 1px 4px rgba(50, 50, 50, 0.4);
+}
+
+div.upMenu ul
+{
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  text-align: center;
+}
+
+div.upMenu ul li
+{
+  display: inline;
+}
+
+div.upMenu ul li a
+{
+  text-decoration: none;
+  padding: .2em 1em;
+  color: #000;
+  background-color: #ffffff;
+  border: solid 1px #e3e3e3;
+  border-radius: 2px;
+  -moz-border-radius: 2px;
+  -webkit-border-radius: 2px;
+  -khtml-border-radius: 2px;
+}
+
+div.upMenu ul li a:hover
+{
+  color: #000;
+  background-color: #f9f9f9;
+}
+
+div.upMenu:after
+{
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  border-bottom: 10px solid blue;
+  border-bottom-color: #eeeeee; /*inherit*/
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent; 
+}
+
+div.upMenu-close
+{
+  cursor: pointer;
+  float: left;
+  font-size: 10px;
+  font-weight: bold;
+  margin: -4px 0;
+  padding: 3px 0 4px 3px;
+  position: absolute;
+  right: -4px;
+  text-align: center;
+  top : -2px;
+  width: 20px;
+}
+
+.upMenuHintById
+{
+  cursor: help;
+}
+
+.clearfix:after
+{
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+
+.avatar
+{
+  float: left;
+  margin-right: 10px;
+}
+
+.info 
+{
+  float: left;
+}</code>
+    </property>
+    <property>
+      <name/>
+    </property>
+    <property>
+      <parse>1</parse>
+    </property>
+    <property>
+      <use>onDemand</use>
+    </property>
+  </object>
+  <object>
+    <class>
+      <name>XWiki.WikiMacroClass</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <code>
+        <disabled>0</disabled>
+        <name>code</name>
+        <number>9</number>
+        <prettyName>Macro code</prettyName>
+        <rows>20</rows>
+        <size>40</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </code>
+      <contentDescription>
+        <disabled>0</disabled>
+        <name>contentDescription</name>
+        <number>8</number>
+        <prettyName>Content description (Not applicable for "No content" type)</prettyName>
+        <rows>5</rows>
+        <size>40</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </contentDescription>
+      <contentType>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <multiSelect>0</multiSelect>
+        <name>contentType</name>
+        <number>7</number>
+        <prettyName>Macro content type</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator>|</separator>
+        <separators>|</separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>Optional|Mandatory|No content</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </contentType>
+      <defaultCategory>
+        <disabled>0</disabled>
+        <name>defaultCategory</name>
+        <number>4</number>
+        <prettyName>Default category</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </defaultCategory>
+      <description>
+        <disabled>0</disabled>
+        <name>description</name>
+        <number>3</number>
+        <prettyName>Macro description</prettyName>
+        <rows>5</rows>
+        <size>40</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </description>
+      <id>
+        <disabled>0</disabled>
+        <name>id</name>
+        <number>1</number>
+        <prettyName>Macro id</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </id>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>2</number>
+        <prettyName>Macro name</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+      <supportsInlineMode>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType>yesno</displayType>
+        <name>supportsInlineMode</name>
+        <number>5</number>
+        <prettyName>Supports inline mode</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </supportsInlineMode>
+      <visibility>
+        <cache>0</cache>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <multiSelect>0</multiSelect>
+        <name>visibility</name>
+        <number>6</number>
+        <prettyName>Macro visibility</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator>|</separator>
+        <separators>|</separators>
+        <size>1</size>
+        <unmodifiable>0</unmodifiable>
+        <values>Current User|Current Wiki|Global</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </visibility>
+    </class>
+    <name>XWiki.UserProfileMacro</name>
+    <number>0</number>
+    <className>XWiki.WikiMacroClass</className>
+    <guid>f668b9db-c7b3-457d-bfde-d62bb488c3ae</guid>
+    <property>
+      <code>{{velocity}}
+#set($ok = $xwiki.jsx.use('XWiki.UserProfileMacro', {'minify':false})) 
+#set($ok = $xwiki.ssx.use('XWiki.UserProfileMacro'))
+##
+#set($edit   = $services.localization.render("rightsmanager.edit"))
+#set($view   = "$services.localization.render('rightsmanager.view') $services.localization.render('core.menu.type.profile').toLowerCase()")
+#set($delete = $services.localization.render("rightsmanager.delete"))
+##
+#macro (prettify $txt)
+  #if($xcontext.macro.params.section == "contact") 
+    #set($loc = "platform.core.profile.")
+  #else
+    #set($loc = "XWiki.XWikiUsers_")
+  #end
+  #set($l = $services.localization.render("${loc}${txt}"))
+  ##
+  ${l.substring(0,1).toUpperCase()}${l.substring(1)}:
+#end
+##
+#set($personalSection = ["company", "comment"])
+#set($contactSection  = ["phone", "address"])
+#set($linksSection    = ["blog", "blogfeed"])
+##
+#if($xcontext.macro.params.section == "personal")
+  #set($section = $personalSection)
+#elseif($xcontext.macro.params.section == "contact")
+  #set($section = $contactSection)
+#else
+  #set($section = $linksSection)
+#end
+##
+#set($query   = ", BaseObject as obj WHERE lower(doc.fullName) = lower('$xcontext.macro.params.username')")
+#set($results = $xwiki.wrapDocs($xwiki.searchDocuments($query, 1, 0)))
+##
+#if($results.size() &gt; 0)
+  #set($user = $results.get(0))
+  {{html wiki="true"}}
+    &lt;div class="clearfix"&gt;
+        &lt;span id="avatar_$user.fullName" class="avatar"&gt;
+          {{useravatar username="$user.fullName" width="40" height="40" /}}
+        &lt;/span&gt;
+        &lt;span class="upMenu hidden" target="avatar_$user.fullName"&gt;
+          &lt;ul&gt;
+            #if($hasAdmin)&lt;li&gt;[[$edit&gt;&gt;$xwiki.getDocument($user.fullName).getExternalURL("edit")]]&lt;/li&gt;#end
+            #if(1==1)&lt;li&gt;[[$view&gt;&gt;$user.fullName]]&lt;/li&gt;#end
+            #if($hasAdmin)&lt;li&gt;[[$delete&gt;&gt;$xwiki.getDocument($user.fullName).getExternalURL("delete")]]&lt;/li&gt;#end
+          &lt;/ul&gt;
+        &lt;/span&gt;
+        &lt;span class="info"&gt;
+          &lt;b&gt;[[$user.getValue("first_name") $user.getValue("last_name")&gt;&gt;$user.fullName]]&lt;/b&gt; &lt;br/&gt;
+          #if("$!user.getValue('email')" != "")
+            [[$user.getValue("email")&gt;&gt;mailto:$user.getValue("email")]]
+          #end
+        &lt;/span&gt;
+    &lt;/div&gt;
+    #foreach($s in $section)
+      #if("$!user.getValue($s)" != "")
+        #prettify($s) $user.getValue($s) &lt;br/&gt;
+      #end
+    #end
+  {{/html}}
+#else
+  The user was not found!
+#end
+{{/velocity}}</code>
+    </property>
+    <property>
+      <contentDescription/>
+    </property>
+    <property>
+      <contentType>No content</contentType>
+    </property>
+    <property>
+      <defaultCategory/>
+    </property>
+    <property>
+      <description>Displays basic information for the specified user by section.
+Also contains a tooltip-like menu with 3 actions:
+ - edit profile (viewable by admin only)
+ - view profile
+ - delete profile (viewable by admin only)</description>
+    </property>
+    <property>
+      <id>userprofile</id>
+    </property>
+    <property>
+      <name>User profile</name>
+    </property>
+    <property>
+      <supportsInlineMode/>
+    </property>
+    <property>
+      <visibility>Current Wiki</visibility>
+    </property>
+  </object>
+  <object>
+    <class>
+      <name>XWiki.WikiMacroParameterClass</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <defaultValue>
+        <disabled>0</disabled>
+        <name>defaultValue</name>
+        <number>4</number>
+        <prettyName>Parameter default value</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </defaultValue>
+      <description>
+        <disabled>0</disabled>
+        <name>description</name>
+        <number>2</number>
+        <prettyName>Parameter description</prettyName>
+        <rows>5</rows>
+        <size>40</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </description>
+      <mandatory>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType>yesno</displayType>
+        <name>mandatory</name>
+        <number>3</number>
+        <prettyName>Parameter mandatory</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </mandatory>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>1</number>
+        <prettyName>Parameter name</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+    </class>
+    <name>XWiki.UserProfileMacro</name>
+    <number>0</number>
+    <className>XWiki.WikiMacroParameterClass</className>
+    <guid>735514f8-a157-4feb-9392-41cc0bcd9d27</guid>
+    <property>
+      <defaultValue/>
+    </property>
+    <property>
+      <description/>
+    </property>
+    <property>
+      <mandatory>1</mandatory>
+    </property>
+    <property>
+      <name>username</name>
+    </property>
+  </object>
+  <object>
+    <class>
+      <name>XWiki.WikiMacroParameterClass</name>
+      <customClass/>
+      <customMapping/>
+      <defaultViewSheet/>
+      <defaultEditSheet/>
+      <defaultWeb/>
+      <nameField/>
+      <validationScript/>
+      <defaultValue>
+        <disabled>0</disabled>
+        <name>defaultValue</name>
+        <number>4</number>
+        <prettyName>Parameter default value</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </defaultValue>
+      <description>
+        <disabled>0</disabled>
+        <name>description</name>
+        <number>2</number>
+        <prettyName>Parameter description</prettyName>
+        <rows>5</rows>
+        <size>40</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+      </description>
+      <mandatory>
+        <disabled>0</disabled>
+        <displayFormType>select</displayFormType>
+        <displayType>yesno</displayType>
+        <name>mandatory</name>
+        <number>3</number>
+        <prettyName>Parameter mandatory</prettyName>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+      </mandatory>
+      <name>
+        <disabled>0</disabled>
+        <name>name</name>
+        <number>1</number>
+        <prettyName>Parameter name</prettyName>
+        <size>30</size>
+        <unmodifiable>0</unmodifiable>
+        <classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+      </name>
+    </class>
+    <name>XWiki.UserProfileMacro</name>
+    <number>1</number>
+    <className>XWiki.WikiMacroParameterClass</className>
+    <guid>ebcd5d2e-70e7-4615-b214-9f2b7c3b9c01</guid>
+    <property>
+      <defaultValue>personal</defaultValue>
+    </property>
+    <property>
+      <description>personal/contact/links</description>
+    </property>
+    <property>
+      <mandatory>0</mandatory>
+    </property>
+    <property>
+      <name>section</name>
+    </property>
+  </object>
+  <content>{{userprofile username="XWiki.Admin" section="contact" /}}</content>
+</xwikidoc>
